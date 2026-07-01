@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Ağaç Tablosu — Çiftlik Yönetim Sistemi</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#2e7d32">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="tablo-body">
+    <header class="panel-ust">
+        <div class="panel-baslik">🌾 Çiftlik Yönetim Sistemi</div>
+        <nav class="ust-nav">
+            <a href="index.html" class="nav-link">🗺️ Harita</a>
+            <a href="tablo.html" class="nav-link aktif">📋 Tablo</a>
+        </nav>
+    </header>
+
+    <main class="tablo-icerik">
+        <div class="tablo-arac">
+            <div class="tablo-arac-sol">
+                <input type="search" id="arama" placeholder="🔍 Ara (numara, cins, not...)">
+                <span id="agac-sayisi" class="sayi-rozet"></span>
+            </div>
+            <div class="tablo-arac-sag">
+                <button id="yenile" class="ikincil-btn kucuk">↻ Yenile</button>
+            </div>
+        </div>
+
+        <div class="tablo-sarmal">
+            <table id="agac-tablo" class="veri-tablo">
+                <thead id="tablo-baslik"></thead>
+                <tbody id="tablo-govde"></tbody>
+            </table>
+            <div id="bos-mesaj" class="bos-mesaj gizli">
+                Henüz ağaç eklenmemiş. <a href="index.html">Haritaya git</a> ve ağaç ekle.
+            </div>
+        </div>
+
+        <p class="ipucu-alt">Sütun başlığına tıklayarak sırala. Varsayılan: senin verdiğin numaraya göre.</p>
+    </main>
+
+    <script src="store.js"></script>
+    <script src="tablo.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+      }
+    </script>
+</body>
+</html>

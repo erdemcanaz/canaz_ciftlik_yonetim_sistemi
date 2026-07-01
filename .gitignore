@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Proje verileri
+data/
+app/static/uploads/
+.venv/
+
+# PWA aktarim dosyasi (cizftlik verisi)
+ciftlik-aktarim.json
+
+# Kisisel tarla gorseli (repoda/Pageste herkese acik olmasin)
+app/tarla_background.png

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Tarla Haritası — Çiftlik Yönetim Sistemi</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#2e7d32">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Leaflet + Geoman (yerelleştirilmiş — offline çalışır) -->
+    <link rel="stylesheet" href="vendor/leaflet.css">
+    <script src="vendor/leaflet.js"></script>
+    <link rel="stylesheet" href="vendor/leaflet-geoman.css">
+    <script src="vendor/leaflet-geoman.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="harita-body">
+    <header class="panel-ust">
+        <div class="panel-baslik">🌾 Çiftlik Yönetim Sistemi</div>
+        <nav class="ust-nav">
+            <a href="index.html" class="nav-link aktif">🗺️ Harita</a>
+            <a href="tablo.html" class="nav-link">📋 Tablo</a>
+        </nav>
+    </header>
+
+    <div class="harita-govde">
+        <main id="harita" class="harita"></main>
+
+        <!-- Yüzen araç butonları -->
+        <div class="harita-araclar" id="harita-araclar">
+            <button id="fab-agac-ekle" class="fab" title="Ağaç Ekle">
+                <span class="fab-arti">＋</span>🌳
+            </button>
+            <button id="fab-ayarlar" class="fab" title="Ayarlar">⚙️</button>
+        </div>
+
+        <!-- Ayarlar paneli -->
+        <div id="ayarlar-panel" class="yuzen-panel gizli">
+            <div class="yp-baslik">Ayarlar
+                <button class="mini-btn yp-kapat" data-panel="ayarlar-panel">✕</button>
+            </div>
+            <label class="dosya-btn">
+                Tarla Görseli Yükle
+                <input type="file" id="gorsel-yukle" accept="image/*" hidden>
+            </label>
+            <label class="satir">
+                <span>Görsel görünür</span>
+                <input type="checkbox" id="gorsel-goster" checked>
+            </label>
+            <label class="satir dikey">
+                <span>Şeffaflık: <em id="seffaflik-deger">100%</em></span>
+                <input type="range" id="seffaflik" min="0" max="100" value="100">
+            </label>
+            <label class="satir dikey">
+                <span>Su işareti eşiği (gün): <em id="esik-deger">7</em></span>
+                <input type="number" id="sulama-esigi" min="0" value="7">
+            </label>
+            <p class="ipucu">Eşikten daha eski sulanan (veya hiç sulanmamış) ağaç grileşir ve 💧 gösterir.</p>
+
+            <hr>
+            <div class="yp-baslik">Yedekleme</div>
+            <button id="yedek-al" class="ikincil-btn">💾 Yedekle & Paylaş</button>
+            <button id="yedek-yukle" class="ikincil-btn">📥 Yedekten İçe Aktar</button>
+            <input type="file" id="yedek-dosya" accept="application/json,.json" hidden>
+            <p class="ipucu">Yedek dosyası WhatsApp / Drive / e-posta ile paylaşılabilir. İçe aktarma mevcut verinin üzerine yazar.</p>
+
+            <hr>
+            <div class="yp-baslik">Ağaç Etiketleri (PDF)</div>
+            <label class="satir dikey">
+                <span>Tasma boyutu</span>
+                <select id="etiket-boyut">
+                    <option value="kucuk">Küçük — sayfada 24 (QR tasma)</option>
+                    <option value="buyuk">Büyük — sayfada 8</option>
+                </select>
+            </label>
+            <label class="satir">
+                <span>Arkalı-önlü</span>
+                <input type="checkbox" id="etiket-arkali" checked>
+            </label>
+            <button id="etiket-pdf" class="ikincil-btn">🖨️ Etiket PDF Oluştur</button>
+            <p class="ipucu">Her ağaç için numara + tür + QR'lı tasma. QR okutunca o ağaç açılır. Çift taraflı basımda yazıcıda <strong>"uzun kenardan çevir"</strong> seç. QR'ın telefonda çalışması için yayınlanmış (GitHub Pages) adresten oluştur.</p>
+        </div>
+
+        <!-- Sağ: seçili ağacın kimlik kartı -->
+        <aside id="agac-panel" class="agac-panel gizli">
+            <div class="panel-baslik-satir">
+                <h3>Ağaç Kimlik Kartı</h3>
+                <button id="panel-kapat" class="mini-btn" title="Kapat">✕</button>
+            </div>
+
+            <div class="uuid-satir">
+                <span class="etiket-kucuk">UUID</span>
+                <code id="agac-uuid" title="Kopyalamak için tıkla"></code>
+            </div>
+
+            <label class="alan">
+                <span>Numara (senin verdiğin)</span>
+                <input type="text" id="agac-numara" placeholder="ör. A-14">
+            </label>
+
+            <label class="alan">
+                <span>Tür</span>
+                <button type="button" id="agac-kategori" class="ikon-sec-btn" data-key="genel"></button>
+            </label>
+
+            <label class="alan">
+                <span>Dikim Tarihi</span>
+                <input type="date" id="agac-dikim">
+                <em id="agac-yas" class="yas-bilgi"></em>
+            </label>
+
+            <label class="alan">
+                <span>Notlar</span>
+                <textarea id="agac-notlar" rows="2"></textarea>
+            </label>
+
+            <div class="buton-satir">
+                <button id="agac-kaydet" class="birincil-btn">Kaydet</button>
+                <button id="agac-sil" class="tehlike-btn">Ağacı Sil</button>
+            </div>
+
+            <hr>
+
+            <h4>💧 Sulama</h4>
+            <div class="satir">
+                <input type="date" id="sulama-tarih">
+                <input type="text" id="sulama-not" placeholder="Not (isteğe bağlı)">
+            </div>
+            <button id="sulama-ekle" class="ikincil-btn">Sulama Ekle</button>
+            <ul id="sulama-liste" class="gecmis-liste"></ul>
+
+            <hr>
+
+            <h4>🧺 Ürün / Hasat</h4>
+            <div class="satir">
+                <input type="date" id="hasat-tarih">
+                <input type="number" id="hasat-miktar" placeholder="Miktar" step="any">
+                <input type="text" id="hasat-birim" placeholder="kg" class="dar">
+            </div>
+            <input type="text" id="hasat-not" placeholder="Not (isteğe bağlı)">
+            <button id="hasat-ekle" class="ikincil-btn">Hasat Ekle</button>
+            <div id="hasat-toplam" class="toplam-bilgi"></div>
+            <ul id="hasat-liste" class="gecmis-liste"></ul>
+        </aside>
+    </div>
+
+    <script src="store.js"></script>
+    <script src="app.js"></script>
+    <!-- PDF etiket üretimi (jsPDF + QR) -->
+    <script src="vendor/jspdf.umd.min.js"></script>
+    <script src="vendor/qrcode.js"></script>
+    <script src="etiket.js"></script>
+    <script>
+      // Service worker (offline) + kalıcı depolama isteği
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+      }
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+
+      // Yedekle & paylaş
+      document.getElementById("yedek-al").addEventListener("click", () =>
+        window.ciftlikStore.yedekPaylas().catch((e) => alert("Paylaşılamadı: " + e.message))
+      );
+      // Yedekten içe aktar (üzerine yazma uyarısı ile)
+      const _impInput = document.getElementById("yedek-dosya");
+      document.getElementById("yedek-yukle").addEventListener("click", () => _impInput.click());
+      _impInput.addEventListener("change", async (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        const onay = confirm(
+          "DİKKAT: İçe aktarma, telefondaki MEVCUT TÜM verinin (ağaçlar, sulama, hasat) ÜZERİNE YAZAR ve siler.\n\n" +
+          "Önce mevcut verini 'Yedekle & Paylaş' ile yedeklemen önerilir.\n\nDevam edilsin mi?"
+        );
+        if (!onay) { e.target.value = ""; return; }
+        try {
+          const veri = JSON.parse(await f.text());
+          await window.ciftlikStore.iceAktar(veri);
+          alert("Yedek geri yüklendi. Sayfa yenileniyor.");
+          location.reload();
+        } catch (err) {
+          alert("İçe aktarma başarısız: " + err.message);
+        }
+        e.target.value = "";
+      });
+    </script>
+</body>
+</html>
