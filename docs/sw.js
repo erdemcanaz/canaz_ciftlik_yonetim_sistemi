@@ -1,7 +1,7 @@
 /* Service Worker — uygulamayı offline çalıştırır (app shell önbelleği).
    Kod güncellendiğinde CACHE sürümünü artır (v1 → v2 ...). */
 
-const CACHE = "ciftlik-v7";
+const CACHE = "ciftlik-v8";
 
 const VARLIKLAR = [
   "index.html",

@@ -850,8 +850,29 @@ button:hover {
 
 .buton-satir {
     display: flex;
+    align-items: center;
     gap: 8px;
     margin-top: 12px;
+}
+
+/* Otomatik kaydet durum göstergesi (Kaydet butonu yerine) */
+.kayit-durum {
+    flex: 1;
+    font-size: 12px;
+    color: #8a978c;
+}
+.kayit-durum.tamam { color: var(--yesil); font-weight: 600; }
+.kayit-durum.bekliyor { color: #8a978c; }
+.kayit-durum.hata { color: var(--hata); font-weight: 600; }
+
+/* Görsel yükleme girişi: görünmez ama RENDER edilir (eski Android'de dosya
+   seçici label'a dokununca açılsın — display:none bazı cihazlarda açmıyor) */
+.gizli-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
 }
 
 .birincil-btn {

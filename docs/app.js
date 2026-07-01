@@ -907,6 +907,39 @@ async function tekAgacYenile(treeId) {
 // ----------------------------------------------------------------------------
 // Olay bağlama
 // ----------------------------------------------------------------------------
+// Detay panelinde bir alanı ANINDA (otomatik) kaydet — Kaydet butonu yok
+async function alanKaydet(govde) {
+  if (!seciliAgacId) return;
+  kayitDurum("kaydediliyor");
+  try {
+    await api(`/api/trees/${seciliAgacId}`, { method: "PATCH", body: govde });
+    await tekAgacYenile(seciliAgacId);
+    kayitDurum("kaydedildi");
+  } catch (e) {
+    kayitDurum("hata");
+  }
+}
+
+function kayitDurum(durum) {
+  const el = $("kayit-durum");
+  if (!el) return;
+  clearTimeout(el._z);
+  if (durum === "kaydediliyor") {
+    el.textContent = "Kaydediliyor…";
+    el.className = "kayit-durum bekliyor";
+  } else if (durum === "kaydedildi") {
+    el.textContent = "✓ Kaydedildi";
+    el.className = "kayit-durum tamam";
+    el._z = setTimeout(() => {
+      el.textContent = "Otomatik kaydedilir";
+      el.className = "kayit-durum";
+    }, 1600);
+  } else {
+    el.textContent = "⚠ Kaydedilemedi";
+    el.className = "kayit-durum hata";
+  }
+}
+
 function olaylariBagla() {
   // --- Yüzen paneller (cinsler / ayarlar) ---
   // Butonlara/panellere yapılan tıklamalar haritaya geçmesin (yanlışlıkla ağaç eklenmesin)
@@ -987,13 +1020,34 @@ function olaylariBagla() {
   map.on("movestart", () => { radyalKapat(); hizliHasatKapat(); });
   map.on("zoomstart", () => { radyalKapat(); hizliHasatKapat(); });
 
-  // Ağaç türü (kategori) seçici — detay panelindeki buton, ikon ızgarasını açar
+  // Ağaç türü (kategori) seçici — seçilince ANINDA kaydet
   const katBtn = $("agac-kategori");
   katBtn.addEventListener("click", () => {
     ikonSeciciAc(katBtn, katBtn.dataset.key, (key) => {
       katBtn.dataset.key = key;
       ikonBtnDoldur(katBtn);
+      alanKaydet({ category: key });
     });
+  });
+
+  // Numara / Notlar → yazarken (kısa gecikmeyle) otomatik kaydet
+  let _yaziZaman = null;
+  const yaziAuto = (alan, el) =>
+    el.addEventListener("input", () => {
+      clearTimeout(_yaziZaman);
+      _yaziZaman = setTimeout(
+        () => alanKaydet({ [alan]: el.value.trim() || null }),
+        500
+      );
+    });
+  yaziAuto("label", $("agac-numara"));
+  yaziAuto("notes", $("agac-notlar"));
+
+  // Dikim tarihi → değişince anında kaydet + yaşı güncelle
+  $("agac-dikim").addEventListener("change", () => {
+    const v = $("agac-dikim").value || null;
+    $("agac-yas").textContent = yasHesapla(v);
+    alanKaydet({ planted_on: v });
   });
 
   // Sulama eşiği
@@ -1006,23 +1060,7 @@ function olaylariBagla() {
     await agaclariYukle(); // su işaretleri yeni eşiğe göre güncellensin
   });
 
-  // Panel: kaydet
-  $("agac-kaydet").addEventListener("click", async () => {
-    if (!seciliAgacId) return;
-    const govde = {
-      label: $("agac-numara").value.trim() || null,
-      category: $("agac-kategori").dataset.key || "genel",
-      planted_on: $("agac-dikim").value || null,
-      notes: $("agac-notlar").value.trim() || null,
-    };
-    try {
-      await api(`/api/trees/${seciliAgacId}`, { method: "PATCH", body: govde });
-      $("agac-yas").textContent = yasHesapla(govde.planted_on);
-      await tekAgacYenile(seciliAgacId);
-    } catch (err) {
-      alert("Kaydedilemedi: " + err.message);
-    }
-  });
+  // (Kaydet butonu kaldırıldı — alanlar otomatik kaydedilir)
 
   // Panel: sil
   $("agac-sil").addEventListener("click", async () => {
