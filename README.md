@@ -1,0 +1,1 @@
+# canaz_ciftlik_yonetim_sistemi
