@@ -236,10 +236,11 @@ async function agacListe() {
     .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
 }
 
-async function agacOlustur(lat, lng, label) {
+async function agacOlustur(lat, lng, label, category) {
   const id = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now() + Math.random());
+  const kat = category && KAT_KEYS.has(category) ? category : "genel";
   const t = {
-    id, label: label || null, category: "genel",
+    id, label: label || null, category: kat,
     lat, lng, planted_on: null, notes: null, created_at: nowIso(),
   };
   await dbPut("trees", t);
@@ -461,7 +462,7 @@ async function localApi(url, options = {}) {
   // /api/trees
   if (yol === "/api/trees") {
     if (method === "GET") return agacListe();
-    if (method === "POST") return agacOlustur(govde.lat, govde.lng, govde.label);
+    if (method === "POST") return agacOlustur(govde.lat, govde.lng, govde.label, govde.category);
   }
   if (p[0] === "api" && p[1] === "trees" && p[2] && !p[3]) {
     if (method === "GET") { const t = await agacDetay(p[2]); if (!t) throw new Error("Ağaç bulunamadı"); return t; }

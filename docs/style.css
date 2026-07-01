@@ -541,12 +541,13 @@ button:hover {
     position: relative;
     width: 30px;
     height: 32px;
+    /* Zoom'la büyüsün: yaklaşınca ikonlar küçük kalmasın (JS --agac-olcek verir) */
+    transform: scale(var(--agac-olcek, 1));
+    transform-origin: 15px 31px; /* ikon tabanı (anchor) sabit kalsın */
 }
 
 .agac-svg {
-    display: block;
-    /* Tek hafif beyaz kontur (eski telefonlarda hızlı; çoklu filtre pahalı) */
-    filter: drop-shadow(0 0 0.8px rgba(255, 255, 255, 0.9));
+    display: block; /* filtre yok — eski telefonlarda çok daha hızlı */
 }
 
 /* Susuz ağaç → grileşir (su işareti de çıkar) */
@@ -554,6 +555,23 @@ button:hover {
     filter: grayscale(1);
     opacity: 0.9;
 }
+
+/* Uzaktayken hafif nokta; yaklaşınca detay. Geçiş sadece .detay-modu sınıfıyla. */
+.agac-nokta {
+    position: absolute;
+    left: 15px;
+    top: 31px;
+    transform: translate(-50%, -50%);
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1.5px solid #fff;
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.5);
+}
+
+.agac-detay { display: none; }
+.harita.detay-modu .agac-detay { display: block; }
+.harita.detay-modu .agac-nokta { display: none; }
 
 .su-damla {
     position: absolute;
@@ -623,9 +641,8 @@ button:hover {
     transform-origin: 15px 31px; /* ikon tabanı (anchor) etrafında */
 }
 
-.agac-ikon-sarmal.tasinabilir .agac-svg {
-    filter: drop-shadow(0 0 3px #1565c0) drop-shadow(0 0 2px #1565c0);
-}
+/* (Taşımada mavi parıltı filtresi kaldırıldı — sürüklerken 60fps'de pahalıydı;
+   nabız efekti taşınabilirliği zaten belli ediyor.) */
 
 @keyframes tasima-nabiz {
     0%, 100% { transform: scale(1); }

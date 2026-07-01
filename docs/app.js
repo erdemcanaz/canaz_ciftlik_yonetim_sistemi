@@ -48,6 +48,8 @@ let agacEkleModu = false;
 let tasimaAktif = false;      // varsayılan: ağaçlar kilitli (kazara kaymasın)
 let esikGun = 7;
 let fitZoom = 0;              // görselin tam sığdığı zoom (etiket eşiği için)
+let detayZoom = 1;           // bu zoom'dan itibaren detaylı ikon (altında hafif nokta)
+let sonKategori = "genel";   // yeni ağaç bu türle eklenir (en son seçilen)
 let radyalEl = null;          // açık hızlı menü
 let hizliHasatEl = null;      // açık hızlı hasat kartı
 
@@ -67,7 +69,14 @@ function cinsRengi(species_id, verilen) {
 // ----------------------------------------------------------------------------
 window.addEventListener("DOMContentLoaded", init);
 
+// Yeni ağaçların varsayılan türü (en son seçilen) — cihazda hatırlanır
+function sonKategoriAyarla(key) {
+  sonKategori = key || "genel";
+  try { localStorage.setItem("sonKategori", sonKategori); } catch (_) {}
+}
+
 async function init() {
+  try { sonKategori = localStorage.getItem("sonKategori") || "genel"; } catch (_) {}
   const config = await api("/api/config");
   esikGun = config.watering_threshold_days;
   $("sulama-esigi").value = esikGun;
@@ -119,8 +128,9 @@ function haritaKur(gorselUrl) {
       });
       map.fitBounds(bounds);
       fitZoom = map.getZoom();
-      map.on("zoomend", etiketGuncelle);
-      etiketGuncelle();
+      detayZoom = fitZoom + 0.5;   // biraz yakınlaşınca detaylı ikona geç
+      map.on("zoomend", haritaOlaylari);
+      haritaOlaylari();            // ilk mod/ölçek/etiket durumunu ayarla
 
       if (gorselUrl) {
         imageOverlay = L.imageOverlay(gorselUrl, bounds).addTo(map);
@@ -523,20 +533,29 @@ function ikonSeciciAc(anchorEl, seciliKey, onSec) {
   setTimeout(() => document.addEventListener("pointerdown", ikonSeciciDisTikla, true), 0);
 }
 
+// Tek marker: uzaktayken NOKTA, yaklaşınca DETAYLI ikon — geçiş yalnızca bir
+// CSS sınıfıyla (.detay-modu) olur, zoom'da setIcon/DOM yenileme YOK → akıcı.
 function agacIkonu(agac) {
   const key = agac.category || agac.species_icon || "genel";
   const su = agac.needs_water ? '<div class="su-damla">💧</div>' : "";
-  // Yakınlaşınca görünen etiket: numara (varsa) + ne ağacı olduğu
-  const no = agac.label ? `<b class="ae-no">${escapeHtml(agac.label)}</b>` : "";
-  const ad = agac.species_name ? `<span class="ae-cins">${escapeHtml(agac.species_name)}</span>` : "";
-  const etiket = (no || ad) ? `<div class="agac-etiket">${no}${ad}</div>` : "";
+  const etiket = agac.label
+    ? `<div class="agac-etiket"><b class="ae-no">${escapeHtml(agac.label)}</b></div>`
+    : "";
+  const renk = agac.needs_water ? "#9e9e9e" : "#2e7d32";
   const svg = `<svg class="agac-svg" viewBox="0 0 32 34" width="30" height="32">${ikonIcSvg(key)}</svg>`;
   return L.divIcon({
     className: "agac-ikon-sarmal" + (agac.needs_water ? " susuz" : ""),
-    html: `<div class="agac-marker">${svg}${su}${etiket}</div>`,
+    html: `<div class="agac-marker">
+             <span class="agac-nokta" style="background:${renk}"></span>
+             <div class="agac-detay">${svg}${su}${etiket}</div>
+           </div>`,
     iconSize: [30, 32],
     iconAnchor: [15, 31],
   });
+}
+
+function detayliMi() {
+  return !!map && map.getZoom() >= detayZoom;
 }
 
 // Fareyle üzerine gelince "ne ağacı" olduğunu baloncukla göster (her zoom'da)
@@ -643,19 +662,40 @@ async function agaclariYukle() {
   agaclar.forEach(markerEkle);
 }
 
+// Ağaç verisi değişince ikonu tazele (nadir: düzenleme sonrası). setIcon DOM'u
+// yenilediği için uzun-basmayı tekrar bağla.
 function markerYenile(agac) {
   const m = markerlar.get(agac.id);
   if (!m) return;
   m._agac = agac;
   m.setIcon(agacIkonu(agac));
+  baglaUzunBasma(m);
+  if (m._kilitAcik) {
+    const el = m.getElement();
+    if (el) el.classList.add("tasinabilir");
+  }
   tooltipKur(m, agac);
 }
 
-// Numaralar (etiketler) yalnızca yeterince yakınlaşınca görünür
+// Zoom bittiğinde: mod geçişi yalnızca bir CSS sınıfı (setIcon YOK) + ölçek + etiket
+function haritaOlaylari() {
+  if (!map) return;
+  map.getContainer().classList.toggle("detay-modu", detayliMi());
+  olcekGuncelle();
+  etiketGuncelle();
+}
+
+// Detaylı ikonları zoom'la büyüt (yakınlaşınca küçük kalmasın) — ucuz CSS ölçeği
+function olcekGuncelle() {
+  if (!map) return;
+  const s = Math.min(2.8, Math.max(0.9, Math.pow(2, (map.getZoom() - detayZoom) * 0.6)));
+  map.getContainer().style.setProperty("--agac-olcek", s.toFixed(2));
+}
+
+// Numaralar yalnızca iyice yakınlaşınca (ağaçlar seyrekken) görünür → üst üste binmesin
 function etiketGuncelle() {
   if (!map) return;
-  const goster = map.getZoom() >= fitZoom + 1;
-  map.getContainer().classList.toggle("etiket-goster", goster);
+  map.getContainer().classList.toggle("etiket-goster", map.getZoom() >= fitZoom + 2);
 }
 
 // ----------------------------------------------------------------------------
@@ -1005,12 +1045,13 @@ function olaylariBagla() {
     if (!agacEkleModu) return;
     if (map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled()) return;
     try {
+      // Yeni ağaç, en son seçilen türle eklenir (hepsini tek tek değiştirme)
       const agac = await api("/api/trees", {
         method: "POST",
-        body: { lat: e.latlng.lat, lng: e.latlng.lng },
+        body: { lat: e.latlng.lat, lng: e.latlng.lng, category: sonKategori },
       });
       markerEkle(agac);
-      toast("Ağaç eklendi 🌳");
+      toast(sonKategori === "genel" ? "Ağaç eklendi 🌳" : `Eklendi: ${ikonAdi(sonKategori)}`);
     } catch (err) {
       alert("Ağaç eklenemedi: " + err.message);
     }
@@ -1020,12 +1061,13 @@ function olaylariBagla() {
   map.on("movestart", () => { radyalKapat(); hizliHasatKapat(); });
   map.on("zoomstart", () => { radyalKapat(); hizliHasatKapat(); });
 
-  // Ağaç türü (kategori) seçici — seçilince ANINDA kaydet
+  // Ağaç türü (kategori) seçici — seçilince ANINDA kaydet + "son tür" olarak hatırla
   const katBtn = $("agac-kategori");
   katBtn.addEventListener("click", () => {
     ikonSeciciAc(katBtn, katBtn.dataset.key, (key) => {
       katBtn.dataset.key = key;
       ikonBtnDoldur(katBtn);
+      sonKategoriAyarla(key);
       alanKaydet({ category: key });
     });
   });
