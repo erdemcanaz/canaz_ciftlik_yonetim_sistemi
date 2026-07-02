@@ -1,0 +1,283 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çalışma İzni Onay Sistemi</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --danger-color: #dc2626;
+            --success-color: #16a34a;
+            --bg-color: #f8fafc;
+            --info-bg: #eff6ff;
+            --info-border: #bfdbfe;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Bilgi Paneli Stilleri */
+        .info-panel {
+            background-color: var(--info-bg);
+            border: 1px solid var(--info-border);
+            border-left: 5px solid var(--primary-color);
+            padding: 20px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 30px;
+            color: #1e40af;
+        }
+
+        .info-panel h3 {
+            margin-top: 0;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-panel ul {
+            margin: 10px 0 0 0;
+            padding-left: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 30px;
+        }
+
+        h2 { color: #1e293b; text-align: center; margin-bottom: 25px; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #475569;
+        }
+
+        input, select {
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .full-width { grid-column: span 2; }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s;
+            margin-top: 20px;
+        }
+
+        button:hover { background-color: #1d4ed8; }
+
+        .table-container {
+            width: 100%;
+            max-width: 1100px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            padding: 15px;
+            color: #475569;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-approved { background: #dcfce7; color: var(--success-color); }
+        .status-rejected { background: #fee2e2; color: var(--danger-color); }
+    </style>
+</head>
+<body>
+
+    <!-- Bilgi Paneli -->
+    <div class="info-panel">
+        <h3>ℹ️ Onaylama Kriterleri (Bilgilendirme)</h3>
+        <ul>
+            <li><strong>Türk Vatandaşları:</strong> Herhangi bir ek şarta tabi olmaksızın otomatik olarak <b>ONAY</b> alır.</li>
+            <li><strong>Yabancı Vatandaşlar:</strong> Aşağıdaki iki şartın <u>aynı anda</u> sağlanması gerekir:
+                <ul>
+                    <li><strong>Kota Şartı:</strong> Şirketteki Türk çalışan sayısı, (mevcut yabancılar + yeni kişi) toplamının en az 5 katı olmalıdır. (Örn: 2 yabancı için en az 10 Türk çalışan).</li>
+                    <li><strong>Sigorta Şartı:</strong> Sigorta ödemesi mutlaka "Evet" olarak işaretlenmiş olmalıdır.</li>
+                </ul>
+            </li>
+            <li>Bu şartlardan biri bile eksikse sonuç <b>REDDEDİLDİ</b> olarak görünür.</li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <h2>Çalışan Onay Giriş Paneli</h2>
+        <form id="employeeForm" class="form-grid">
+            <div class="form-group">
+                <label>Ad Soyad</label>
+                <input type="text" id="fullName" required placeholder="Örn: Ahmet Yılmaz">
+            </div>
+            <div class="form-group">
+                <label>Uyruk</label>
+                <select id="nationality">
+                    <option value="Türk">Türk</option>
+                    <option value="Yabancı">Yabancı</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Çalışacağı Şehir</label>
+                <input type="text" id="city" required placeholder="Örn: İstanbul">
+            </div>
+            <div class="form-group">
+                <label>Meslek</label>
+                <input type="text" id="job" required placeholder="Örn: Yazılım Uzmanı">
+            </div>
+            <div class="form-group">
+                <label>Toplam Çalışan Sayısı</label>
+                <input type="number" id="totalStaff" required>
+            </div>
+            <div class="form-group">
+                <label>Türk Çalışan Sayısı</label>
+                <input type="number" id="turkishStaff" required>
+            </div>
+            <div class="form-group">
+                <label>Yabancı Çalışan Sayısı</label>
+                <input type="number" id="foreignStaff" required>
+            </div>
+            <div class="form-group">
+                <label>Sigorta Ödeniyor mu?</label>
+                <select id="insurance">
+                    <option value="Evet">Evet</option>
+                    <option value="Hayır">Hayır</option>
+                </select>
+            </div>
+            <button type="submit" class="full-width">Ekle ve Kontrol Et</button>
+        </form>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ad Soyad</th>
+                    <th>Uyruk</th>
+                    <th>Şehir</th>
+                    <th>Meslek</th>
+                    <th>Kota (T/Y)</th>
+                    <th>Sigorta</th>
+                    <th>Onay Durumu</th>
+                </tr>
+            </thead>
+            <tbody id="employeeList">
+                <!-- Veriler buraya gelecek -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const form = document.getElementById('employeeForm');
+        const list = document.getElementById('employeeList');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const fullName = document.getElementById('fullName').value;
+            const nationality = document.getElementById('nationality').value;
+            const city = document.getElementById('city').value;
+            const job = document.getElementById('job').value;
+            const totalStaff = parseInt(document.getElementById('totalStaff').value);
+            const turkishStaff = parseInt(document.getElementById('turkishStaff').value);
+            const foreignStaff = parseInt(document.getElementById('foreignStaff').value);
+            const insurance = document.getElementById('insurance').value;
+
+            let isApproved = false;
+
+            if (nationality === "Türk") {
+                isApproved = true;
+            } else {
+                const newForeignTotal = foreignStaff + 1;
+                const quotaOk = (turkishStaff / newForeignTotal) >= 5;
+                const insuranceOk = (insurance === "Evet");
+
+                if (quotaOk && insuranceOk) {
+                    isApproved = true;
+                } else {
+                    isApproved = false;
+                }
+            }
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${fullName}</td>
+                <td>${nationality}</td>
+                <td>${city}</td>
+                <td>${job}</td>
+                <td>${turkishStaff} / ${foreignStaff}</td>
+                <td>${insurance}</td>
+                <td>
+                    <span class="status ${isApproved ? 'status-approved' : 'status-rejected'}">
+                        ${isApproved ? '✅ ONAYLANDI' : '❌ REDDEDİLDİ'}
+                    </span>
+                </td>
+            `;
+
+            list.appendChild(row);
+            form.reset();
+        });
+    </script>
+</body>
+</html>
